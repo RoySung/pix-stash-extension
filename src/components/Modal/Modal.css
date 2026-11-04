@@ -1,0 +1,82 @@
+.ps-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 40;
+  padding: 24px;
+  background: var(--ps-overlay);
+  overscroll-behavior: none;
+  overflow-y: auto;
+}
+
+.ps-modal__surface.ps-card {
+  display: flex;
+  flex-direction: column;
+  width: min(480px, 100%);
+  max-height: calc(100dvh - 48px);
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid #0755ce;
+  border-radius: 7px 7px 3px 3px;
+  background: #ece9d8;
+  box-shadow: 0 12px 36px #0005, inset 1px 1px 0 #fff8;
+}
+
+.ps-modal__titlebar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 4px 5px 4px 10px;
+  background: var(--ps-titlebar);
+  color: white;
+  border-bottom: 1px solid #0345b8;
+}
+.ps-modal__title {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 600;
+  text-shadow: 1px 1px 1px #123c86;
+}
+.ps-modal__close {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  padding: 4px;
+  border: 1px solid #fff;
+  border-radius: 3px;
+  color: white;
+  background: linear-gradient(135deg, #ffb69b, #e45d3e 45%, #c32c16);
+  box-shadow: inset 1px 1px 0 #ffd8c6, inset -1px -1px 0 #a62813;
+  cursor: pointer;
+}
+.ps-modal__close svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2.5; }
+.ps-modal__close:hover { filter: brightness(1.12); }
+.ps-modal__close:active { box-shadow: inset 1px 1px 2px #832411; }
+.ps-modal__close:focus-visible { outline: 2px solid white; outline-offset: 2px; }
+.ps-modal__content { padding: 20px; overflow-y: auto; min-height: 0; color: var(--ps-ink); font-size: 14px; }
+.ps-modal__content > p:first-child { margin-top: 0; }
+.ps-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #c9c6b7;
+  box-shadow: 0 -1px 0 #fff8;
+}
+.ps-modal__actions .ps-button { min-width: 80px; }
+@media (max-width: 600px) {
+  .ps-modal__backdrop { padding: 16px; }
+  .ps-modal__surface.ps-card { max-height: calc(100dvh - 32px); }
+  .ps-modal__content { padding: 16px; }
+}

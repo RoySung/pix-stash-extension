@@ -1,0 +1,22 @@
+{
+  "date": "2026-11-03",
+  "version": "0.1.0",
+  "permissions": [
+    "activeTab",
+    "contextMenus",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "file_count": 29,
+  "sha256": "48b102aef3e053f6502014c47ce1ecdcc81c79038d3d0309bd80c43e8e4b135b",
+  "bytes": 8686844,
+  "checks": [
+    "No tabs permission",
+    "No development fixtures, Picsum, inspector or editor entry points in executable files",
+    "No tests, sourcemaps, environment files or store source files",
+    "Bundled font license included"
+  ]
+}

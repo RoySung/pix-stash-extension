@@ -1,0 +1,86 @@
+[
+  {
+    "file": "assets/promotional/promo-large-en-US.png",
+    "width": 1400,
+    "height": 560,
+    "sha256": "dace2f72345aa6715220dfe6dbd40ef09ec9ed012e0257cd8d6e38f62b020ce4"
+  },
+  {
+    "file": "assets/promotional/promo-large-zh-TW.png",
+    "width": 1400,
+    "height": 560,
+    "sha256": "59398b556c3ef1aa1d5d83f53cfb38f87f3120200adf63e67cc54c21842fbac1"
+  },
+  {
+    "file": "assets/promotional/promo-small-en-US.png",
+    "width": 440,
+    "height": 280,
+    "sha256": "b1cba15290058e05090dc7ed1713534669292ff5f284d9c66830679edfdfa20e"
+  },
+  {
+    "file": "assets/promotional/promo-small-zh-TW.png",
+    "width": 440,
+    "height": 280,
+    "sha256": "1064776f361511a662738643f8c676bd29b44964cb826b83974210d4e167351b"
+  },
+  {
+    "file": "assets/screenshots/01-library-en-US.png",
+    "width": 1280,
+    "height": 800,
+    "sha256": "93df19c94deb54cc60b3a18eee00546c0c6179a6c1f2b51834791fb9f1b0182a"
+  },
+  {
+    "file": "assets/screenshots/01-library-zh-TW.png",
+    "width": 1280,
+    "height": 800,
+    "sha256": "e43f1aea364bac1abe6111493b9a0470748b593ad9001f44516b704d533f2f95"
+  },
+  {
+    "file": "assets/screenshots/02-list-en-US.png",
+    "width": 1280,
+    "height": 800,
+    "sha256": "5e525f2ab2dfa5f58d8999041fff3dc4b56d96d096ed56970f03bc542ddc29c5"
+  },
+  {
+    "file": "assets/screenshots/02-list-zh-TW.png",
+    "width": 1280,
+    "height": 800,
+    "sha256": "8be489a7c4daccb36297032f48524585ed08fac7aac8d83669ab73f92fbbc630"
+  },
+  {
+    "file": "assets/screenshots/03-organize-en-US.png",
+    "width": 1280,
+    "height": 800,
+    "sha256": "e89611d7e32a560b820c42cb97e405289a1d9b74eec3c9629061f2ea03640796"
+  },
+  {
+    "file": "assets/screenshots/03-organize-zh-TW.png",
+    "width": 1280,
+    "height": 800,
+    "sha256": "5408357706e14b2ad512c49a27121fd3ee6465ebcdf901d436c53697440a454e"
+  },
+  {
+    "file": "assets/screenshots/04-search-en-US.png",
+    "width": 1280,
+    "height": 800,
+    "sha256": "6096efa6002874fb244cf13fabffdb62d3c7eed9d88821ba35cbcd95bde04438"
+  },
+  {
+    "file": "assets/screenshots/04-search-zh-TW.png",
+    "width": 1280,
+    "height": 800,
+    "sha256": "13ca2e6e41a764f439df03bc4870bef5dda5be72e53755d13212b80ed7be8d2a"
+  },
+  {
+    "file": "assets/screenshots/05-preview-en-US.png",
+    "width": 1280,
+    "height": 800,
+    "sha256": "ff1f4f463cae7ed21c437f637b0df5b705632b299e1ee899c685795d163eed55"
+  },
+  {
+    "file": "assets/screenshots/05-preview-zh-TW.png",
+    "width": 1280,
+    "height": 800,
+    "sha256": "a7f058f16145e9ce11fc4e17b283702eedd748d34ca0bd6364126ccfe2f4832a"
+  }
+]

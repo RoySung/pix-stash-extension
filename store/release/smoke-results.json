@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-03",
+  "status": "passed",
+  "checks": [
+    "Production ?mock=1 creates no fixtures",
+    "Active-page title, URL and image detection",
+    "Image capture stores local image bytes",
+    "Duplicate page image is recognized",
+    "Background collection creation and tag deduplication",
+    "Library search matches and excludes items",
+    "Notes persist after reload",
+    "List preference persists and image preview opens",
+    "Visible viewport capture",
+    "Region selection, keyboard adjustment and save",
+    "Settings language change propagates on library reload",
+    "Item deletion persists",
+    "No non-local HTTP requests observed during this workflow"
+  ],
+  "limits": [
+    "Native image context-menu click still requires manual verification",
+    "Real-site CDN/authentication and browser-restricted pages not covered",
+    "Network observation covers this workflow only"
+  ]
+}

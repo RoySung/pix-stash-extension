@@ -1,0 +1,38 @@
+{
+  "name": "pix-stash-extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox",
+    "zip": "wxt zip",
+    "zip:firefox": "wxt zip -b firefox",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "postinstall": "wxt prepare"
+  },
+  "dependencies": {
+    "i18next": "^26.0.8",
+    "idb": "^8.0.3",
+    "react": "^19.1.0",
+    "react-dev-inspector": "^2.0.1",
+    "react-dom": "^19.1.0",
+    "react-i18next": "^17.0.6",
+    "yet-another-react-lightbox": "^3.31.0"
+  },
+  "devDependencies": {
+    "@react-dev-inspector/babel-plugin": "^2.0.1",
+    "@react-dev-inspector/vite-plugin": "^2.0.1",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@wxt-dev/module-react": "1.1.1",
+    "fake-indexeddb": "^6.0.1",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4",
+    "wxt": "0.19.11"
+  }
+}

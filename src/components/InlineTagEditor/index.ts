@@ -1,0 +1,1 @@
+export { InlineTagEditor, type InlineTagEditorProps } from './InlineTagEditor';

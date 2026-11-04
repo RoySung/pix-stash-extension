@@ -1,0 +1,133 @@
+.ps-selectbox {
+  position: relative;
+  width: 100%;
+}
+
+.ps-selectbox__trigger {
+  width: 100%;
+  min-height: 34px;
+  padding: 2px 3px 2px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--ps-control-border);
+  border-radius: var(--ps-radius-sm);
+  background: var(--ps-surface);
+  color: var(--ps-ink);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.ps-selectbox__trigger:hover {
+  border-color: var(--ps-ink-soft);
+}
+
+.ps-selectbox__trigger:focus-visible {
+  outline: 2px solid var(--ps-accent);
+  outline-offset: 3px;
+}
+
+.ps-selectbox__value {
+  min-width: 0;
+  flex: 1;
+}
+
+.ps-selectbox__icon,
+.ps-selectbox__check {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ps-ink-soft);
+  flex: none;
+}
+
+.ps-selectbox__icon svg,
+.ps-selectbox__check svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.ps-selectbox.is-open .ps-selectbox__icon {
+  background: #cbdfff;
+}
+
+.ps-selectbox__menu {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  z-index: 20;
+  width: 100%;
+  padding: 3px;
+  display: grid;
+  gap: 1px;
+  border: 1px solid var(--ps-control-border);
+  border-radius: 3px;
+  background: var(--ps-surface);
+  box-shadow: var(--ps-shadow);
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.ps-selectbox__option {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--ps-ink);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.ps-selectbox__option:hover,
+.ps-selectbox__option:focus-visible,
+.ps-selectbox__option.is-selected {
+  outline: none;
+  background: var(--ps-surface-accent);
+  color: var(--ps-ink);
+}
+
+.ps-selectbox__option.is-selected {
+  font-weight: 600;
+}
+.ps-selectbox__trigger { background: #fff; box-shadow: inset 1px 1px 2px #e3e6eb; }
+.ps-selectbox__icon { width: 24px; height: 26px; border: 1px solid #a1b6d1; border-radius: 2px; background: linear-gradient(#f0f6ff, #c7d9f3); color: #174583; box-shadow: inset 1px 1px 0 #fff; }
+.ps-selectbox__trigger:hover { border-color: var(--ps-accent); }
+.ps-selectbox__trigger:hover .ps-selectbox__icon { background: #dceaff; }
+.ps-selectbox__check { color: var(--ps-accent); }
+.ps-selectbox__value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.ps-selectbox__value, .ps-selectbox__option-label { display: flex; align-items: center; gap: 8px; min-width: 0; }
+
+/* Top-layer positioning avoids clipping by scrollable dialogs. */
+.ps-selectbox__menu[popover] {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  box-sizing: border-box;
+  color: var(--ps-ink);
+  font-family: var(--ps-font-body);
+}
+.ps-selectbox__menu[popover]:not(:popover-open) { display: none; }
