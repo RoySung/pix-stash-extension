@@ -1,6 +1,6 @@
-# PixStash 隱私政策（待定稿）
+# PixStash 隱私政策
 
-發布狀態：草稿。開發者：RoySung；聯絡信箱：roysunghan@gmail.com。生效日期：首次公開發布當日（發布前填入）。
+開發者：RoySung；聯絡信箱：roysunghan@gmail.com。生效日期：2026-11-04。
 
 PixStash 由 RoySung 提供，協助你收集網頁圖片與截圖，並以資料夾、標籤和筆記整理參考素材。
 

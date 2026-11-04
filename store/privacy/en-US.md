@@ -1,6 +1,6 @@
-# PixStash Privacy Policy — Draft
+# PixStash Privacy Policy
 
-Publication status: draft. Developer: RoySung. Contact: roysunghan@gmail.com. Effective date: date of first public publication (fill in before publishing).
+Developer: RoySung. Contact: roysunghan@gmail.com. Effective date: 2026-11-04.
 
 PixStash is provided by RoySung to help you save web images and screenshots and organize references with folders, tags, and notes.
 
