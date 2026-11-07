@@ -19,8 +19,9 @@ export default defineConfig({
         : {},
   }),
   manifest: ({ browser }) => ({
-    name: "PixStash",
-    description: "Stash visual candidates. Pick the best.",
+    default_locale: "en",
+    name: "__MSG_extensionName__",
+    description: "__MSG_extensionDescription__",
     icons: {
       16: "icon/16.png",
       32: "icon/32.png",

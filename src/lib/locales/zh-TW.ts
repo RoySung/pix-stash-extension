@@ -89,6 +89,7 @@ const zhTW = {
     just_stashed_inline: "此儲藏已準備好。立即設定資料夾和標籤，或跳至圖庫。",
   },
   library: {
+    version: "版本 {{version}}",
     grid_size: "檢視圖示大小",
     grid_size_large: "大型圖示",
     grid_size_medium: "中型圖示",

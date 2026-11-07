@@ -89,6 +89,7 @@ const enUS = {
     just_stashed_inline: "This stash is ready. Set folders and tags now, or jump into Library.",
   },
   library: {
+    version: "Version {{version}}",
     grid_size: "View icon size",
     grid_size_large: "Large icons",
     grid_size_medium: "Medium icons",

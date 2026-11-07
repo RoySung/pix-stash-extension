@@ -40,6 +40,7 @@ const GRID_SIZE_KEY = "pixstash.library.grid-size";
 const LIBRARY_VIEW_MODE_KEY = "pixstash.library.view-mode";
 const SITE_FILTER_LABEL_ID = "library-site-filter-label";
 const SORT_LABEL_ID = "library-sort-label";
+const EXTENSION_VERSION = browser.runtime.getManifest().version;
 
 export function App() {
   const { t } = useTranslation();
@@ -539,6 +540,9 @@ export function App() {
       <header className="library__header">
         <div className="library__masthead">
           <h1><img className="library__brand-icon" src="/icon/48.png" alt="" aria-hidden="true" />Pix Stash</h1>
+          <span className="library__version" aria-label={t("library.version", { version: EXTENSION_VERSION })}>
+            v{EXTENSION_VERSION}
+          </span>
         </div>
 
 
