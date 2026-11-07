@@ -1,0 +1,66 @@
+name: Chrome Web Store
+
+on:
+  push:
+    tags: ['v*']
+  # Manual runs only check credentials; version tags perform the submission.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Serialize store operations without interrupting an upload or submission.
+concurrency:
+  group: chrome-web-store
+  cancel-in-progress: false
+
+jobs:
+  build:
+    uses: ./.github/workflows/ci.yml
+
+  submit:
+    name: Submit with WXT
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: chrome-extension
+          path: .output
+      - name: Validate Chrome Web Store credentials
+        env:
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+        run: |
+          for key in CHROME_EXTENSION_ID CHROME_CLIENT_ID CHROME_CLIENT_SECRET CHROME_REFRESH_TOKEN; do
+            if [ -z "${!key}" ]; then
+              echo "::error::Missing GitHub Actions secret: $key"
+              exit 1
+            fi
+          done
+      - name: Submit Chrome ZIP (manual runs are dry runs)
+        env:
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+        run: |
+          args=()
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            args+=(--dry-run)
+          fi
+          pnpm submit:chrome --chrome-zip .output/*-chrome.zip "${args[@]}"

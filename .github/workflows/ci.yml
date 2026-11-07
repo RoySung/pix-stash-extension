@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check and package Chrome extension
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Check release tag matches package version
+        if: github.ref_type == 'tag'
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
+          if (process.env.GITHUB_REF_NAME !== `v${version}`) {
+            throw new Error(`Release tag must be v${version}`);
+          }
+          NODE
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chrome-extension
+          path: .output/*-chrome.zip
+          if-no-files-found: error
+          retention-days: 14

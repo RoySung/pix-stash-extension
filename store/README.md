@@ -4,6 +4,8 @@
 
 此資料夾統一管理商店文案、品牌素材、截圖及送審資料。先以 Chrome Web Store 為準備方向，Firefox Add-ons 為後續待確認渠道。平台欄位與素材規格需在送審前對照官方後台確認。
 
+自動打包與送審設定請見 [Chrome Web Store CI/CD](../docs/chrome-web-store-deployment.md)；部署使用 WXT 的 `wxt submit`。
+
 ## 目錄
 
 - `copy/zh-TW.md`：繁中文案草稿。
