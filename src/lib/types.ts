@@ -1,6 +1,13 @@
 import type { CaptureErrorCode } from './capture-errors';
 export type CaptureMode = 'instant_screenshot' | 'region_screenshot' | 'page_image';
 
+export interface BookmarkRecord {
+  id: string;
+  name: string;
+  url: string;
+  position: number;
+}
+
 export interface CollectionRecord {
   id: string;
   name: string;

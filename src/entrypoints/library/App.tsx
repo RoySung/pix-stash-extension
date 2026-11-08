@@ -10,6 +10,7 @@ import {
 } from "../../components";
 import { ItemActions } from "./ItemActions";
 import { LibraryTable } from "./LibraryTable";
+import { BookmarksMenu } from "./BookmarksMenu";
 import { isSelectionClick } from "./selection-click";
 import {
   createCollection,
@@ -547,6 +548,8 @@ export function App() {
 
 
       </header>
+
+      <BookmarksMenu />
 
           <section className="library__filters">
             <div className="library__filters-head">

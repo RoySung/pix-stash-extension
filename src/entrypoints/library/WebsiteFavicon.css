@@ -1,0 +1,4 @@
+.website-favicon { width: 18px; height: 18px; flex: none; object-fit: contain; }
+svg.website-favicon { fill: none; stroke: var(--ps-ink-soft); stroke-width: 1.4; }
+.website-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.website-title > span { min-width: 0; overflow-wrap: anywhere; }

@@ -1,6 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 
-import type { CollectionRecord, ItemRecord } from './types';
+import type { BookmarkRecord, CollectionRecord, ItemRecord } from './types';
 
 interface LegacyItemRecord extends Omit<ItemRecord, 'tags'> {
   favorite?: boolean;
@@ -9,6 +9,10 @@ interface LegacyItemRecord extends Omit<ItemRecord, 'tags'> {
 }
 
 interface PixStashSchema extends DBSchema {
+  bookmarks: {
+    key: string;
+    value: BookmarkRecord;
+  };
   items: {
     key: string;
     value: ItemRecord;
@@ -91,7 +95,7 @@ async function migrateItemsToV2(db: IDBPDatabase<PixStashSchema>) {
 
 export function getDb() {
   if (!dbPromise) {
-    dbPromise = openDB<PixStashSchema>('pixstash', 2, {
+    dbPromise = openDB<PixStashSchema>('pixstash', 3, {
       async upgrade(db, oldVersion, _newVersion, transaction) {
         if (oldVersion < 1) {
           createStores(db);
@@ -114,6 +118,10 @@ export function getDb() {
           for (const item of items) {
             await itemStore.put(normalizeLegacyItemRecord(item));
           }
+        }
+
+        if (oldVersion < 3) {
+          db.createObjectStore('bookmarks', { keyPath: 'id' });
         }
       },
     });
