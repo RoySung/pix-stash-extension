@@ -1,3 +1,6 @@
+import { foregroundImages } from '../../lib/foreground-images';
+import { captureSourceLocator, rememberContextTarget, verifySourceCapture } from '../../lib/source-locator-dom';
+import { runSourceRelocation, type RelocationStrings } from '../../lib/source-relocation-dom';
 import { CAPTURE_WAIT_MS, captureErrorCode, isCaptureErrorCode, withCaptureDeadline, type CaptureErrorCode } from '../../lib/capture-errors';
 import i18next from 'i18next';
 
@@ -13,9 +16,39 @@ export default defineContentScript({
   matches: ['<all_urls>'],
   runAt: 'document_idle',
   main() {
-    void ensureI18n();
+    // Script may be injected again after an extension reload. Keep one listener per document.
+    const state = globalThis as typeof globalThis & { __pixstashPageDetect?: boolean };
+    if (state.__pixstashPageDetect) return;
+    state.__pixstashPageDetect = true;
+    document.addEventListener('contextmenu', rememberContextTarget, true);
+    let relocation: (() => void) | undefined;
+    const ready = async () => {
+      await ensureI18n();
+      const payload = await browser.runtime.sendMessage({type:MESSAGE.relocationReady}).catch(() => undefined);
+      if (!payload?.requestId && !payload?.unsupported) return;
+      const strings = Object.fromEntries(['searching','found','nearby','ambiguous','not-found','unsupported','cancelled','cancel','close','dismiss_highlight','clues','original','retry','retry_search'].map(key => [key,t(`relocation.${key}`)])) as unknown as RelocationStrings;
+      relocation?.();
+      relocation = runSourceRelocation(payload.unsupported ? {requestId:'unsupported',expires:Date.now()} : payload, strings, status => { void browser.runtime.sendMessage({type:MESSAGE.relocationResult,requestId:payload.requestId,status}).catch(() => {}); }, async urls => {const result=await withCaptureDeadline(browser.runtime.sendMessage({type:MESSAGE.verifySourceImages,requestId:payload.requestId,urls}),6000);return result?.url;});
+    };
+    void ready();
+    addEventListener('pageshow', event => { if (event.persisted) void ready(); });
     browser.runtime.onMessage.addListener((message) => {
       switch (message?.type) {
+        case MESSAGE.relocationProbe:
+          void ready();
+          return Promise.resolve({ok:true});
+        case MESSAGE.captureSourceLocator:
+          if (!['context_image','page_image','region_screenshot','instant_screenshot'].includes(message.mode)) return;
+          return Promise.resolve(captureSourceLocator(message.mode, message.rect, message.imageUrl));
+        case MESSAGE.verifySourceCapture:
+          return Promise.resolve({valid:verifySourceCapture(message.token)});
+        case MESSAGE.relocationCancel:
+          relocation?.();
+          if (message.unsupported) void ensureI18n().then(() => {
+            const strings = Object.fromEntries(['searching','found','nearby','ambiguous','not-found','unsupported','cancelled','cancel','close','dismiss_highlight','clues','original','retry','retry_search'].map(key => [key,t(`relocation.${key}`)])) as unknown as RelocationStrings;
+            relocation = runSourceRelocation({requestId:'unsupported',expires:Date.now()},strings,()=>{});
+          });
+          return Promise.resolve({ok:true});
         case MESSAGE.getPageCandidate:
           return Promise.resolve(getPageCandidate());
         case MESSAGE.beginRegionSelection:
@@ -38,7 +71,7 @@ export default defineContentScript({
 });
 
 function getPageCandidate(): PageCandidate | null {
-  return detectPageCandidate(document, window.location.href, window.location.hostname);
+  return detectPageCandidate({title:document.title, images:document.images, foregroundImages:foregroundImages(), querySelector:document.querySelector.bind(document)}, window.location.href, window.location.hostname);
 }
 
 const Z = '2147483647';
@@ -367,8 +400,9 @@ async function beginRegionSelection() {
     if (!currentSelection) return;
     const selection = { ...currentSelection, viewportWidth: window.innerWidth, viewportHeight: window.innerHeight };
     teardown();
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
     try {
-      const response = await withCaptureDeadline(browser.runtime.sendMessage({ type: MESSAGE.completeRegionCapture, selection, pageCandidate: getPageCandidate() }));
+      const response = await withCaptureDeadline(browser.runtime.sendMessage({ type: MESSAGE.completeRegionCapture, selection, capture: captureSourceLocator('region_screenshot',selection), pageCandidate: getPageCandidate() }));
       if (!response?.ok) showLocalCaptureError(response?.errorCode ?? 'capture_failed');
     } catch (error) { showLocalCaptureError(captureErrorCode(error)); }
   };
@@ -628,6 +662,7 @@ function showCaptureToast(token: string, errorCode?: CaptureErrorCode) {
   clearTimeout(pendingCaptureTimer);
   dismissToast?.();
   const frame = document.createElement('iframe');
+  frame.setAttribute('data-pixstash-ui','capture-toast');
   frame.title = 'PixStash';
   const url = browser.runtime.getURL('/capture-toast.html');
   frame.src = errorCode ? `${url}#error=${errorCode}` : url;

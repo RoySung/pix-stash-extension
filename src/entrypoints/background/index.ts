@@ -1,3 +1,6 @@
+import type { CaptureSnapshot } from '../../lib/source-locator-dom';
+import { captureSourceLocatorForTab, captureVerifiedScreenshot } from '../../lib/source-capture';
+import { clearRelocation, ensureRelocationPage, expireRelocations, finishRelocation, openItemSource, verifySourceImages, relocationNavigation, relocationReady } from '../../lib/source-relocation';
 import { captureErrorCode, isCaptureErrorCode, withCaptureDeadline, type CaptureErrorCode } from '../../lib/capture-errors';
 import { ToastSessions } from '../../lib/toast-sessions';
 import {
@@ -60,6 +63,7 @@ const MENU_LIBRARY = 'pixstash-library';
 const MENU_STASH_IMAGE = 'pixstash-stash-image';
 
 export default defineBackground(() => {
+  void expireRelocations();
   browser.runtime.onInstalled.addListener(async () => {
     await browser.contextMenus.removeAll();
     browser.contextMenus.create({
@@ -96,8 +100,10 @@ export default defineBackground(() => {
     }
   });
 
-  browser.tabs.onRemoved.addListener(tabId => { toastSessions.revokeTab(tabId); void clearCaptureIssue(tabId); });
+  browser.tabs.onRemoved.addListener(tabId => { void clearRelocation(tabId); toastSessions.revokeTab(tabId); void clearCaptureIssue(tabId); });
   browser.tabs.onUpdated.addListener((tabId, change) => {
+    if (change.url) void relocationNavigation(tabId, change.url);
+    if (change.status === 'complete') void ensureRelocationPage(tabId);
     if (change.status === 'loading') { toastSessions.revokeTab(tabId); void clearCaptureIssue(tabId); }
   });
   browser.runtime.onConnect.addListener(port => {
@@ -166,6 +172,9 @@ export default defineBackground(() => {
       (['/popup.html', '/library.html', '/options.html'] as const).some(path => sender.url?.split(/[?#]/, 1)[0] === browser.runtime.getURL(path));
     if (!extensionUI) {
       if (sender.id !== browser.runtime.id || sender.frameId !== 0 || sender.tab?.id === undefined) return;
+      if (message?.type === MESSAGE.verifySourceImages) return verifySourceImages(message,sender);
+      if (message?.type === MESSAGE.relocationReady) return relocationReady(sender);
+      if (message?.type === MESSAGE.relocationResult) return finishRelocation(message, sender);
       if (message?.type === 'pixstash/revoke-toast') {
         toastSessions.revoke(message.token, sender.tab.id);
         return Promise.resolve({ok:true});
@@ -181,6 +190,8 @@ export default defineBackground(() => {
     }
 
     switch (message?.type) {
+      case MESSAGE.openSource:
+        return openItemSource(message.itemId);
       case MESSAGE.getActiveContext:
         return getActiveContext(true);
       case MESSAGE.getOrganizerData:
@@ -194,7 +205,7 @@ export default defineBackground(() => {
       case MESSAGE.startRegionCapture:
         return startRegionCapture();
       case MESSAGE.completeRegionCapture:
-        return completeRegionCapture(sender.tab?.id, message.selection, message.pageCandidate);
+        return completeRegionCapture(sender.tab?.id, message.selection, sender.url, message.capture);
       case MESSAGE.deleteItem:
         return removeItem(message.itemId);
       case MESSAGE.openLibrary:
@@ -347,18 +358,20 @@ async function showCaptureToast(tabId: number, item: CaptureResponse['item'], du
 async function captureInstant(): Promise<CaptureResponse> {
   try {
     const tab = await getActiveTab();
-    const context = await getActiveContext();
-    const screenshot = await browser.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    const sourceUrl = tab.url ?? '';
+    const context = {sourceUrl,pageTitle:tab.title ?? 'Untitled page',siteName:inferSiteName(sourceUrl),tabId:tab.id!};
+    const {screenshot, sourceLocator} = await captureVerifiedScreenshot(tab, 'instant_screenshot');
     const preview = await createPreviewAsset(screenshot);
     const { item, duplicate } = await createCapturedItem({
       previewUrl: preview.dataUrl,
       imageUrl: screenshot,
       originalImageUrl: null,
       captureMode: 'instant_screenshot',
+      sourceLocator,
       sourceUrl: context.sourceUrl,
       pageTitle: context.pageTitle,
       siteName: context.siteName,
-      metadata: context.pageCandidate?.metadata,
+      metadata: {},
       width: preview.width,
       height: preview.height,
     });
@@ -386,6 +399,7 @@ async function capturePageImage(): Promise<CaptureResponse> {
       };
     }
 
+    const sourceLocator = await captureSourceLocatorForTab(context.tabId, context.sourceUrl, 'page_image', undefined, context.pageCandidate.imageUrl);
     const normalized = await normalizeExternalImage(context.pageCandidate.imageUrl);
 
     const pageRecord = createPageCandidateRecord(context.pageCandidate, context.sourceUrl, context.pageTitle);
@@ -394,6 +408,7 @@ async function capturePageImage(): Promise<CaptureResponse> {
       imageUrl: normalized.original,
       originalImageUrl: context.pageCandidate.imageUrl,
       captureMode: 'page_image',
+      sourceLocator,
       sourceUrl: pageRecord.sourceUrl,
       pageTitle: pageRecord.pageTitle,
       siteName: pageRecord.siteName,
@@ -436,22 +451,24 @@ async function startRegionCapture(tabId?: number) {
   }
 }
 
-async function completeRegionCapture(tabId: number | undefined, selection: RegionSelection, pageCandidate: PageCandidate | null) {
+async function completeRegionCapture(tabId: number | undefined, selection: RegionSelection, senderUrl?: string, capture?: CaptureSnapshot) {
   if (!tabId) {
     return { ok: false, error: 'Missing tab id for region capture' };
   }
 
   try {
     const tab = await browser.tabs.get(tabId);
-    const screenshot = await browser.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    if (!capture || tab.url !== senderUrl) throw new Error('Screenshot document changed');
+    const {screenshot, sourceLocator} = await captureVerifiedScreenshot(tab, 'region_screenshot', selection, capture);
     const cropped = await cropDataUrl(screenshot, selection);
     const preview = await createPreviewAsset(cropped);
-    const pageRecord = createPageCandidateRecord(pageCandidate, tab.url ?? '', tab.title ?? 'Untitled page');
+    const pageRecord = createPageCandidateRecord(null, tab.url ?? '', tab.title ?? 'Untitled page');
     const { item, duplicate } = await createCapturedItem({
       previewUrl: preview.dataUrl,
       imageUrl: cropped,
       originalImageUrl: null,
       captureMode: 'region_screenshot',
+      sourceLocator,
       sourceUrl: pageRecord.sourceUrl,
       pageTitle: pageRecord.pageTitle,
       siteName: pageRecord.siteName,
@@ -491,12 +508,14 @@ async function captureContextMenuImage(
   }
 
   try {
+    const sourceLocator = await captureSourceLocatorForTab(tabId, pageUrl, 'context_image', undefined, imageUrl);
     const normalized = await normalizeExternalImage(imageUrl);
     const { item, duplicate } = await createCapturedItem({
       previewUrl: normalized.preview,
       imageUrl: normalized.original,
       originalImageUrl: imageUrl,
       captureMode: 'page_image',
+      sourceLocator,
       sourceUrl: pageUrl || imageUrl,
       pageTitle,
       siteName: inferSiteName(pageUrl || imageUrl),

@@ -1,4 +1,13 @@
 export const MESSAGE = {
+  captureSourceLocator: 'pixstash/capture-source-locator',
+  verifySourceCapture: 'pixstash/verify-source-capture',
+  openSource: 'pixstash/open-source',
+  verifySourceImages: 'pixstash/verify-source-images',
+  relocationProbe: 'pixstash/relocation-probe',
+  relocationReady: 'pixstash/relocation-ready',
+  relocationStart: 'pixstash/relocation-start',
+  relocationResult: 'pixstash/relocation-result',
+  relocationCancel: 'pixstash/relocation-cancel',
   getActiveContext: 'pixstash/get-active-context',
   getOrganizerData: 'pixstash/get-organizer-data',
   libraryChanged: 'pixstash/library-changed',

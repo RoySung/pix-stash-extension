@@ -1,4 +1,25 @@
 const enUS = {
+  relocation: {
+    verified_source: 'Open saved photo',
+    original_source: 'Open original album / source',
+    retry_search: 'Search this page again',
+    dismiss_highlight: 'Dismiss highlight',
+    "open_position": "Return to saved position",
+    "open_source": "Open source page",
+    "searching": "Finding your saved position…",
+    "found": "Found your saved material or section",
+    "nearby": "Saved content not found. Scroll position restored; it may be on another page. Change pages, then search again.",
+    "ambiguous": "Found similar positions; the saved material is not confirmed",
+    "not-found": "Could not locate the saved material. Use the saved clues; you may need to open a dialog or restore filters manually.",
+    "unsupported": "Automatic positioning is unavailable on this page. Find the saved material manually.",
+    "cancelled": "Search stopped. You can continue browsing.",
+    "cancel": "Stop searching",
+    "close": "Close",
+    "clues": "Saved clues (select to copy)",
+    "original": "Open original image link",
+    "retry": "Retry from the library"
+},
+
   recommendations: {
     menu: 'Recommended websites…',
     title: 'Recommended websites',

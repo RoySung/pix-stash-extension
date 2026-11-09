@@ -1,3 +1,4 @@
+import { OriginalImageLink, OriginalSourceLink, SourceLink } from '../SourceLink';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Lightbox, { useController, useLightboxState } from 'yet-another-react-lightbox';
@@ -93,7 +94,9 @@ function PreviewActions({ items, onItemAction }: Pick<ImagePreviewProps, 'items'
   return <details className="image-preview__actions" key={item.id}>
     <summary>{t('preview.item_actions')}</summary>
     <div className="image-preview__action-menu">
-      <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer">{t('library.source')}</a>
+      <SourceLink item={item} />
+      <OriginalSourceLink item={item} />
+      <OriginalImageLink item={item} />
       <button type="button" onClick={() => onItemAction(item, 'organize')}>{t('preview.organize')}</button>
       <button type="button" onClick={() => onItemAction(item, 'notes')}>{t('library.edit_note')}</button>
       <button type="button" className="image-preview__danger" onClick={() => onItemAction(item, 'delete')}>{t('library.delete')}</button>

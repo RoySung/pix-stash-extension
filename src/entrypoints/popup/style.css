@@ -154,8 +154,40 @@ body {
   font-family: var(--ps-font-display);
 }
 
-.popup__toast--success .popup__toast-copy strong {
-  color: var(--ps-accent);
+.popup__toast--success {
+  background: #edf7ee;
+  border-color: #6c9475;
+}
+
+.popup__toast--success .popup__toast-title {
+  color: #205b32;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.popup__toast-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+}
+
+.popup__toast-success-icon {
+  flex: none;
+  width: 28px;
+  height: 28px;
+}
+
+.popup__toast-success-icon circle {
+  fill: #205b32;
+}
+
+.popup__toast-success-icon path {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .popup__toast--error .popup__toast-copy strong {
@@ -307,7 +339,7 @@ body {
 .popup__actions .ps-button { font-size: 13px; font-weight: 400; }
 .popup__actions .popup__page-image-action { font-weight: 500; min-height: 36px; }
 .popup__footnote { font-size: 12px; border-top: 1px solid var(--ps-line); padding-top: 10px; }
-.popup__toast { margin: 0 12px 12px; }
+.popup__toast { margin: 12px 12px 0; }
 
 .popup__topbar { align-items: center; gap: 10px; }
 .popup__topbar h1 { flex: 1; }

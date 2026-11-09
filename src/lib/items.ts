@@ -1,3 +1,4 @@
+import { parseSourceLocator, type SourceLocator } from './source-locator';
 import { getDb } from "./db";
 import type {
   CaptureMode,
@@ -166,6 +167,7 @@ export interface CreateCapturedItemInput {
   siteName: string;
   captureMode: CaptureMode;
   metadata?: Record<string, string>;
+  sourceLocator?: SourceLocator;
   width?: number;
   height?: number;
   tags?: string[];
@@ -229,8 +231,16 @@ export async function createCapturedItem(input: CreateCapturedItemInput) {
   );
 
   if (existing) {
+    let item=existing;
+    const incoming=parseSourceLocator(input.sourceLocator), previous=parseSourceLocator(existing.sourceLocator);
+    // Explicit repeat capture may add new observed navigation evidence for the identical saved bytes.
+    // Preserve every existing anchor, position, note and organization field.
+    if(input.captureMode==='page_image' && existing.imageUrl===input.imageUrl && incoming?.page.url===existing.sourceUrl) {
+      const sourceLocator=previous ? {...previous,page:{...previous.page,links:[...new Set([...previous.page.links,...incoming.page.links])].slice(0,3)}} : incoming;
+      if(JSON.stringify(sourceLocator)!==JSON.stringify(previous)){item={...existing,sourceLocator};await db.put('items',item);}
+    }
     return {
-      item: existing,
+      item,
       duplicate: true,
     } satisfies CreateCapturedItemResult;
   }
@@ -249,6 +259,7 @@ export async function createCapturedItem(input: CreateCapturedItemInput) {
     metadata: input.metadata ?? {},
     tags: normalizeTags(input.tags ?? []),
     collectionIds: [],
+    sourceLocator: parseSourceLocator(input.sourceLocator),
     width: input.width,
     height: input.height,
   };

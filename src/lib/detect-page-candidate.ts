@@ -1,14 +1,9 @@
 import type { PageCandidate } from './types';
+import { loadedImageUrl } from './image-source';
 
 interface CandidateSource {
   selector: string;
   attribute: 'content' | 'href';
-  sourceType: string;
-}
-
-interface SiteImageRule {
-  hostnamePattern: RegExp;
-  selectors: string[];
   sourceType: string;
 }
 
@@ -25,6 +20,7 @@ export interface PageCandidateImage extends PageCandidateElement {
   alt?: string | null;
   className?: string | { baseVal?: string };
   currentSrc?: string;
+  complete?: boolean;
   height?: number;
   id?: string;
   naturalHeight?: number;
@@ -37,6 +33,7 @@ export interface PageCandidateImage extends PageCandidateElement {
 export interface PageCandidateDocument {
   title: string;
   images: ArrayLike<PageCandidateImage>;
+  foregroundImages?: ArrayLike<PageCandidateImage>;
   querySelector(selector: string): PageCandidateElement | null;
 }
 
@@ -52,14 +49,6 @@ const META_IMAGE_SOURCES: CandidateSource[] = [
   { selector: 'link[rel="image_src"]', attribute: 'href', sourceType: 'social-meta' },
 ];
 
-const SITE_IMAGE_RULES: SiteImageRule[] = [
-  {
-    hostnamePattern: /(^|\.)zsport\.com\.tw$/i,
-    selectors: ['img#p_img.full-screen-image', 'img#p_img', 'img.full-screen-image'],
-    sourceType: 'site-selector',
-  },
-];
-
 const CONTENT_IMAGE_PATTERN = /(hero|main|product|photo|image|gallery|full[-_ ]?screen|lightbox|cover)/i;
 const UI_ASSET_PATTERN = /(logo|icon|sprite|avatar|badge|button|social|facebook|instagram|twitter|line|wechat|cart|search|menu|close|brand)/i;
 const MIN_RENDERED_AREA = 40_000;
@@ -70,9 +59,10 @@ export function detectPageCandidate(
   locationHref: string,
   hostname: string,
 ): PageCandidate | null {
-  const candidate =
-    readMetaImage(candidateDocument, locationHref) ??
-    readSiteSpecificImage(candidateDocument, locationHref, hostname) ??
+  const foreground = candidateDocument.foregroundImages;
+  const candidate = foreground !== undefined
+    ? readBestDocumentImage({...candidateDocument, images:foreground}, locationHref, 'foreground-image')
+    : readMetaImage(candidateDocument, locationHref) ??
     readBestDocumentImage(candidateDocument, locationHref);
 
   if (!candidate) {
@@ -107,35 +97,7 @@ function readMetaImage(candidateDocument: PageCandidateDocument, locationHref: s
   return null;
 }
 
-function readSiteSpecificImage(
-  candidateDocument: PageCandidateDocument,
-  locationHref: string,
-  hostname: string,
-): CandidateImageResult | null {
-  for (const rule of SITE_IMAGE_RULES) {
-    if (!rule.hostnamePattern.test(hostname)) {
-      continue;
-    }
-
-    for (const selector of rule.selectors) {
-      const image = candidateDocument.querySelector(selector) as PageCandidateImage | null;
-      const value = readImageUrl(image);
-
-      if (!value) {
-        continue;
-      }
-
-      return {
-        imageUrl: toAbsoluteUrl(value, locationHref),
-        sourceType: rule.sourceType,
-      };
-    }
-  }
-
-  return null;
-}
-
-function readBestDocumentImage(candidateDocument: PageCandidateDocument, locationHref: string): CandidateImageResult | null {
+function readBestDocumentImage(candidateDocument: PageCandidateDocument, locationHref: string, sourceType = 'largest-image'): CandidateImageResult | null {
   const images = Array.from(candidateDocument.images)
     .map((image) => scoreImageCandidate(image))
     .filter((image): image is { src: string; score: number } => image !== null)
@@ -147,7 +109,7 @@ function readBestDocumentImage(candidateDocument: PageCandidateDocument, locatio
 
   return {
     imageUrl: toAbsoluteUrl(images[0].src, locationHref),
-    sourceType: 'largest-image',
+    sourceType,
   };
 }
 
@@ -209,7 +171,11 @@ function readImageUrl(image: PageCandidateImage | null | undefined) {
     return null;
   }
 
-  return image.currentSrc || image.src || readAttribute(image, 'src');
+  const current = loadedImageUrl(image);
+  if (current) return current;
+  const raw = image.getAttribute('src');
+  if (raw !== null && !raw.trim() && !readAttribute(image, 'srcset')) return null;
+  return image.src || readAttribute(image,'src');
 }
 
 function readAttribute(element: PageCandidateElement | null | undefined, attribute: string) {

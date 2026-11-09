@@ -1,4 +1,25 @@
 const zhTW = {
+  relocation: {
+    verified_source: '開啟收藏照片',
+    original_source: '開啟原相簿／來源頁',
+    retry_search: '重新尋找',
+    dismiss_highlight: '關閉標示',
+    "open_position": "回到收藏位置",
+    "open_source": "開啟來源頁面",
+    "searching": "正在尋找收藏位置…",
+    "found": "已找到收藏素材／區塊",
+    "nearby": "尚未找到收藏內容。已還原捲動位置；照片可能在其他分頁，請切頁後重新尋找。",
+    "ambiguous": "找到多個相似位置，尚未確認",
+    "not-found": "無法定位收藏。請使用已保存的線索尋找；必要時手動開啟彈窗或調整篩選。",
+    "unsupported": "目前頁面無法自動定位。請手動尋找收藏。",
+    "cancelled": "已停止尋找，你可以繼續瀏覽",
+    "cancel": "停止尋找",
+    "close": "關閉",
+    "clues": "已保存的找回線索（可選取複製）",
+    "original": "開啟原始圖片連結",
+    "retry": "請從圖庫再次回訪"
+},
+
   recommendations: {
     menu: '推薦網站…',
     title: '推薦網站',

@@ -1,3 +1,4 @@
+import { OriginalImageLink, OriginalSourceLink, sourceActionKey, SourceLink } from "../../components/SourceLink";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ItemRecord } from "../../lib/types";
@@ -90,9 +91,9 @@ export function ItemActions({
 
   return (
     <div className="library__item-actions">
-      <a className="library__inline-action" href={item.sourceUrl} target="_blank" rel="noopener noreferrer">
-        {sourceLabel ? <><span className="library__source-label">{t("library.source")}</span>{sourceLabel}</> : t("library.source")}
-      </a>
+      <SourceLink className="library__inline-action" item={item}>
+        {sourceLabel ? <><span className="library__source-label">{t(sourceActionKey(item))}</span>{sourceLabel}</> : t(sourceActionKey(item))}
+      </SourceLink>
       <details
         className="library__more"
         ref={detailsRef}
@@ -124,6 +125,8 @@ export function ItemActions({
               <time dateTime={item.captureTime}>{new Date(item.captureTime).toLocaleString()}</time>
             </div>
           ) : null}
+          <OriginalSourceLink item={item} />
+          <OriginalImageLink item={item} />
           <button type="button" onClick={() => run(onOrganize)}>{t("library.organize")}</button>
           <button type="button" onClick={() => run(onEditNotes)}>
             {item.notes ? t("library.edit_note") : t("library.add_note")}

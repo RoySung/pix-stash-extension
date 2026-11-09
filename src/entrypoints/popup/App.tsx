@@ -95,6 +95,7 @@ export function App() {
 
   async function capture(type: typeof MESSAGE.captureInstant | typeof MESSAGE.capturePageImage) {
     setBusyAction(type);
+    setToast(null);
     try {
       const response = await withCaptureDeadline(browser.runtime.sendMessage({type})) as CaptureResponse;
       if (!response?.ok || !response.item) {
@@ -185,6 +186,69 @@ export function App() {
         </button>
       </nav>
 
+      {toast ? (
+        <div
+          className={`popup__toast popup__toast--${toast.tone ?? 'default'}`}
+        >
+          <div className="popup__toast-head">
+            <div className="popup__toast-copy" aria-atomic="true" role={toast.tone === 'error' ? 'alert' : 'status'}>
+              <strong className="popup__toast-title">
+                {toast.tone === 'success' ? (
+                  <svg className="popup__toast-success-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="m7.5 12 3 3 6-6" />
+                  </svg>
+                ) : null}
+                {toast.title}
+              </strong>
+              {toast.message ? <p>{toast.message}</p> : null}
+            </div>
+
+            <button aria-label={t('popup.dismiss')} className="popup__toast-close" type="button" onClick={() => setToast(null)}>
+              ×
+            </button>
+          </div>
+
+          {toast.tone === 'error' ? (
+            <button className="ps-button" type="button" onClick={() => void startRegionCapture()} disabled={busyAction !== null}>{t('capture_error.use_screenshot')}</button>
+          ) : null}
+          {toast.item ? (
+            <div className="popup__toast-item">
+              <div className="popup__toast-thumb">
+                <img src={toast.item.previewUrl} alt={toast.item.pageTitle || t('toast.saved_reference')} />
+              </div>
+
+              <div className="popup__toast-meta">
+                <strong>{toast.item.pageTitle || t('toast.saved_reference')}</strong>
+                <p>{toast.item.siteName}</p>
+              </div>
+            </div>
+          ) : null}
+
+          {toast.item ? (
+            <div className="popup__toast-actions">
+              <button className="ps-button" data-variant="accent" type="button" onClick={() => openLibrary(toast.item?.id)}>{t('popup.open_library')}</button>
+              {toast.canUndo ? (
+                <button className="ps-button" data-variant="quiet" type="button" onClick={() => void undoCapture()}>{t('popup.undo')}</button>
+              ) : null}
+            </div>
+          ) : null}
+          {toast.item && toast.organizer ? (
+            <details className="popup__toast-organizer" key={toast.item.id}>
+              <summary>{t('library.organize')}</summary>
+              <ItemOrganizer
+                collections={toast.organizer.collections}
+                item={toast.item}
+                knownTags={toast.organizer.knownTags}
+                onSave={saveToastOrganization}
+                saving={toast.organizerSaving}
+              />
+              {toast.organizerStatus ? <p className="popup__toast-status" role="status">{toast.organizerStatus}</p> : null}
+            </details>
+          ) : null}
+        </div>
+      ) : null}
+
       <section className="popup__hero">
         <div className={`popup__hero-main ${hasPageCandidate ? "has-preview" : ""}`}>
           <div className="popup__context">
@@ -237,60 +301,7 @@ export function App() {
         <p className="popup__footnote">{t('popup.footnote')}</p>
       </section>
 
-      {toast ? (
-        <div
-          className={`popup__toast popup__toast--${toast.tone ?? 'default'}`}
-        >
-          <div className="popup__toast-head">
-            <div className="popup__toast-copy" aria-atomic="true" role={toast.tone === 'error' ? 'alert' : 'status'}>
-              <strong>{toast.title}</strong>
-              {toast.message ? <p>{toast.message}</p> : null}
-            </div>
 
-            <button aria-label={t('popup.dismiss')} className="popup__toast-close" type="button" onClick={() => setToast(null)}>
-              ×
-            </button>
-          </div>
-
-          {toast.tone === 'error' ? (
-            <button className="ps-button" type="button" onClick={() => void startRegionCapture()} disabled={busyAction !== null}>{t('capture_error.use_screenshot')}</button>
-          ) : null}
-          {toast.item ? (
-            <div className="popup__toast-item">
-              <div className="popup__toast-thumb">
-                <img src={toast.item.previewUrl} alt={toast.item.pageTitle || t('toast.saved_reference')} />
-              </div>
-
-              <div className="popup__toast-meta">
-                <strong>{toast.item.pageTitle || t('toast.saved_reference')}</strong>
-                <p>{toast.item.siteName}</p>
-              </div>
-            </div>
-          ) : null}
-
-          {toast.item ? (
-            <div className="popup__toast-actions">
-              <button className="ps-button" data-variant="quiet" type="button" onClick={() => openLibrary(toast.item?.id)}>{t('popup.open_library')}</button>
-              {toast.canUndo ? (
-                <button className="ps-button" data-variant="quiet" type="button" onClick={() => void undoCapture()}>{t('popup.undo')}</button>
-              ) : null}
-            </div>
-          ) : null}
-          {toast.item && toast.organizer ? (
-            <details className="popup__toast-organizer" key={toast.item.id}>
-              <summary>{t('library.organize')}</summary>
-              <ItemOrganizer
-                collections={toast.organizer.collections}
-                item={toast.item}
-                knownTags={toast.organizer.knownTags}
-                onSave={saveToastOrganization}
-                saving={toast.organizerSaving}
-              />
-              {toast.organizerStatus ? <p className="popup__toast-status" role="status">{toast.organizerStatus}</p> : null}
-            </details>
-          ) : null}
-        </div>
-      ) : null}
     </div>
   );
 }

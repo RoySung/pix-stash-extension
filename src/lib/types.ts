@@ -1,3 +1,4 @@
+import type { SourceLocator } from './source-locator';
 import type { CaptureErrorCode } from './capture-errors';
 export type CaptureMode = 'instant_screenshot' | 'region_screenshot' | 'page_image';
 
@@ -28,6 +29,7 @@ export interface ItemRecord {
   metadata: Record<string, string>;
   tags: string[];
   collectionIds: string[];
+  sourceLocator?: SourceLocator;
   width?: number;
   height?: number;
 }

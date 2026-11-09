@@ -288,3 +288,30 @@ describe("database migration", () => {
     expect("favorite" in savedItem).toBe(false);
   });
 });
+
+describe('source locator storage',()=>{
+  beforeEach(resetTestDatabase);
+  it('preserves locator through organization, deduplication and deletion',async()=>{
+    const {locatorFixture}=await import('./source-locator.fixture');
+    const {deleteItem,getItem}=await import('./items');
+    const sourceLocator=locatorFixture();
+    const input={previewUrl:'data:image/png;base64,abc',imageUrl:'data:image/png;base64,abc',originalImageUrl:'https://example.com/photo.jpg',sourceUrl:sourceLocator.page.url,pageTitle:'Album',siteName:'example.com',captureMode:'page_image' as const,sourceLocator};
+    const {item}=await createCapturedItem(input);
+    await setItemTags(item.id,['Race']);await setItemCollections(item.id,['collection']);
+    const duplicate=await createCapturedItem({...input,sourceLocator:{...sourceLocator,capturedAt:sourceLocator.capturedAt+1000}});
+    expect(duplicate.item.sourceLocator).toEqual(sourceLocator);
+    expect((await getItem(item.id))?.sourceLocator).toEqual(sourceLocator);
+    await deleteItem(item.id);expect(await getItem(item.id)).toBeUndefined();
+  });
+});
+
+describe('observed link enrichment',()=>{
+ beforeEach(resetTestDatabase);
+ it('adds navigation hints on explicit repeat capture of identical bytes, keeping original anchors and notes',async()=>{
+ const {locatorFixture}=await import('./source-locator.fixture');const {setItemNotes}=await import('./items');
+ const first=locatorFixture();const input={previewUrl:'data:image/png;base64,a',imageUrl:'data:image/png;base64,a',originalImageUrl:first.anchors[0].urls[0],sourceUrl:first.page.url,pageTitle:'Album',siteName:'example.com',captureMode:'page_image' as const,sourceLocator:first};
+ const {item}=await createCapturedItem(input);await setItemNotes(item.id,'keep my notes');
+ const result=await createCapturedItem({...input,sourceLocator:{...first,capturedAt:first.capturedAt+1000,page:{...first.page,links:['https://example.com/photo/1']}}});
+ expect(result.duplicate).toBe(true);expect(result.item.sourceLocator?.page.links).toContain('https://example.com/photo/1');expect(result.item.sourceLocator?.capturedAt).toBe(first.capturedAt);expect(result.item.notes).toBe('keep my notes');
+ });
+});

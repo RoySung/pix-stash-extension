@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { createPreviewFromDataUrl, normalizeExternalImage } from './images';
+import { createPreviewFromDataUrl, imageContentHash, normalizeExternalImage } from './images';
 import { IMAGE_LIMITS } from './image-limits';
 
 function png(width = 1, height = 1) {
@@ -119,4 +119,11 @@ it('times out stuck encoding and releases its bitmap', async () => {
   await vi.advanceTimersByTimeAsync(IMAGE_LIMITS.decodeMs);
   await result;
   expect(close).toHaveBeenCalledOnce();
+});
+
+it('verifies image content from bytes rather than file names or URLs',async()=>{
+ vi.stubGlobal('fetch',vi.fn().mockResolvedValueOnce(new Response(png(100,100))).mockResolvedValueOnce(new Response(png(100,100))).mockResolvedValueOnce(new Response(png(101,100))));
+ const original=await imageContentHash('https://source.example/original.png');
+ expect(await imageContentHash('https://cdn.example/different-name.png')).toBe(original);
+ expect(await imageContentHash('https://source.example/original.png')).not.toBe(original);
 });

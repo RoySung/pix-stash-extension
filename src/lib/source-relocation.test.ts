@@ -1,0 +1,144 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { locatorFixture } from './source-locator.fixture';
+const mocks = vi.hoisted(() => ({ getItem: vi.fn(), updateItem: vi.fn(), hash: vi.fn() }));
+vi.mock('./items', () => ({ getItem: mocks.getItem, updateItem: mocks.updateItem }));
+vi.mock('./images', () => ({ imageContentHash: mocks.hash }));
+import { verifySourceImages, clearRelocation, ensureRelocationPage, expireRelocations, finishRelocation, openItemSource, relocationNavigation, relocationReady } from './source-relocation';
+let stored: Record<string, any>;
+let tabId: number;
+let api: any;
+beforeEach(() => {
+  stored = {};
+  tabId = 20;
+  api = { runtime: { sendMessage: vi.fn(async () => ({})) }, storage: { session: { get: vi.fn(async (key: string | null) => structuredClone(key ? { [key]: stored[key] } : { ...stored })), set: vi.fn(async (data: any) => Object.assign(stored, data)), remove: vi.fn(async (key: string) => { delete stored[key]; }) } }, scripting: { executeScript: vi.fn(async () => []) }, tabs: { get: vi.fn(async () => ({ url: 'https://example.com/album' })), create: vi.fn(async () => ({ id: ++tabId })), update: vi.fn(async () => ({})), sendMessage: vi.fn(async () => ({})) } };
+  vi.stubGlobal('browser', api);
+  mocks.hash.mockClear();
+  mocks.hash.mockImplementation(async (value: string) => value.startsWith('data:') || value.endsWith('/same.jpg') ? 'a'.repeat(64) : 'b'.repeat(64));
+  mocks.updateItem.mockClear();
+  mocks.getItem.mockResolvedValue({ id: 'item', imageUrl: 'data:image/png;base64,stored', sourceUrl: 'https://example.com/album', captureMode: 'page_image', sourceLocator: locatorFixture(), previewUrl: 'data:image/png;base64,AA==' });
+});
+const sender = (id: number, url = 'https://example.com/album') => ({ tab: { id }, frameId: 0, url, documentId: `doc-${id}` });
+describe('relocation jobs', () => {
+  it('persists before navigating and binds two concurrent jobs to their tab', async () => {
+    await openItemSource('one');
+    await openItemSource('two');
+    expect(api.tabs.create).toHaveBeenCalledWith({ url: 'about:blank' });
+    const [a, b] = await Promise.all([relocationReady(sender(21)), relocationReady(sender(22))]);
+    expect(a?.requestId).not.toBe(b?.requestId);
+    expect(a?.locator).toBeDefined();
+    expect(await relocationReady({ ...sender(21), frameId: 1 })).toBeUndefined();
+    expect(await relocationReady(sender(29))).toBeUndefined();
+    await clearRelocation(21);
+    await clearRelocation(22);
+  });
+  it('hands a job to only one ready request and requires the request and document to finish', async () => {
+    await openItemSource('one');
+    const a = await relocationReady(sender(21));
+    expect(a?.requestId).toBeDefined();
+    expect(await relocationReady(sender(21))).toBeUndefined();
+    await finishRelocation({ requestId: 'wrong' }, sender(21));
+    expect(stored['pixstash-relocation-21']).toBeDefined();
+    await finishRelocation({ requestId: a!.requestId }, { ...sender(21), documentId: 'wrong' });
+    expect(stored['pixstash-relocation-21']).toBeDefined();
+    await finishRelocation({ requestId: a!.requestId }, sender(21));
+    expect(stored['pixstash-relocation-21']).toBeUndefined();
+  });
+  it('does not cancel a claimed job when the initial destination URL notification arrives late', async () => {
+    await openItemSource('one');
+    const payload = await relocationReady(sender(21));
+    expect(payload?.requestId).toBeDefined();
+    await relocationNavigation(21, 'https://example.com/album');
+    expect(api.tabs.sendMessage).not.toHaveBeenCalled();
+    expect(stored['pixstash-relocation-21'].requestId).toBe(payload!.requestId);
+    expect(stored['pixstash-relocation-21'].unsupported).not.toBe(true);
+    await clearRelocation(21);
+  });
+  it('injects the bound return tab when no content script was auto-registered', async () => {
+    await openItemSource('one');
+    api.tabs.sendMessage.mockRejectedValue(new Error('No receiver'));
+    await ensureRelocationPage(21);
+    expect(api.scripting.executeScript).toHaveBeenCalledWith({ target: { tabId: 21, frameIds: [0] }, files: ['content-scripts/page-detect.js'] });
+    expect((await relocationReady(sender(21)))?.requestId).toBeDefined();
+    await clearRelocation(21);
+  });
+  it('probes an existing script without reinjection, and never injects unrelated tabs', async () => {
+    await ensureRelocationPage(99);
+    expect(api.tabs.sendMessage).not.toHaveBeenCalled();
+    await openItemSource('one');
+    api.tabs.sendMessage.mockResolvedValue({ ok: true });
+    await ensureRelocationPage(21);
+    expect(api.scripting.executeScript).not.toHaveBeenCalled();
+    await clearRelocation(21);
+  });
+  it('does not inject restricted documents and tolerates denied script access', async () => {
+    await openItemSource('one');
+    api.tabs.get.mockResolvedValue({ url: 'chrome://newtab/' });
+    await ensureRelocationPage(21);
+    expect(api.scripting.executeScript).not.toHaveBeenCalled();
+    api.tabs.get.mockResolvedValue({ url: 'https://example.com/album' });
+    api.scripting.executeScript.mockRejectedValue(new Error('Denied'));
+    await expect(ensureRelocationPage(21)).resolves.toBeUndefined();
+    await clearRelocation(21);
+  });
+  it('loads a persisted job after worker memory is absent', async () => { stored['pixstash-relocation-47'] = { requestId: 'persisted', itemId: 'item', tabId: 47, url: 'https://example.com/album', expires: Date.now() + 5000 }; expect((await relocationReady(sender(47)))?.requestId).toBe('persisted'); await clearRelocation(47); });
+  it('claims a persisted job only once even with concurrent ready messages', async () => { stored['pixstash-relocation-49'] = { requestId: 'persisted-race', itemId: 'item', tabId: 49, url: 'https://example.com/album', expires: Date.now() + 5000 }; const results = await Promise.all([relocationReady(sender(49)), relocationReady(sender(49))]); expect(results.filter(result => result?.requestId)).toHaveLength(1); await clearRelocation(49); });
+  it('blocks cross-origin and login redirects and clears navigation', async () => { await openItemSource('one'); expect(await relocationReady(sender(21, 'https://other.example/login'))).toEqual({ unsupported: true }); await openItemSource('one'); expect(await relocationReady(sender(22, 'https://example.com/login'))).toEqual({ unsupported: true }); await openItemSource('one'); await relocationReady(sender(23)); await relocationNavigation(23, 'https://example.com/elsewhere'); expect(api.tabs.sendMessage).toHaveBeenCalled(); expect((await relocationReady(sender(23, 'https://example.com/elsewhere')))?.unsupported).toBe(true); expect(stored['pixstash-relocation-23']).toBeUndefined(); });
+  it('expires saved jobs and opens legacy screenshots normally', async () => { stored['pixstash-relocation-48'] = { requestId: 'expired', itemId: 'item', tabId: 48, url: 'https://example.com/album', expires: Date.now() - 1 }; await expireRelocations(); expect(stored['pixstash-relocation-48']).toBeUndefined(); mocks.getItem.mockResolvedValue({ sourceUrl: 'https://example.com/old', captureMode: 'region_screenshot' }); await openItemSource('old'); expect(await relocationReady(sender(21, 'https://example.com/old'))).toBeUndefined(); });
+  it('degrades to a memory job when session storage is unavailable', async () => { api.storage.session = undefined; await openItemSource('one'); expect((await relocationReady(sender(21)))?.sessionFallback).toBe(true); await clearRelocation(21); });
+});
+describe('generic observed detail links', () => {
+  it('uses only same-origin observed links and verifies the actual saved image before recording a direct URL', async () => {
+    const item = await mocks.getItem();
+    item.sourceLocator = locatorFixture({ page: { url: item.sourceUrl, title: 'Album', links: ['https://example.com/detail'] } });
+    mocks.getItem.mockResolvedValue(item);
+    await openItemSource('item');
+    expect(api.tabs.update).toHaveBeenLastCalledWith(21, { url: 'https://example.com/detail' });
+    const payload = await relocationReady(sender(21, 'https://example.com/detail'));
+    expect(payload?.verifyLink).toBe(true);
+    const result = await verifySourceImages({ requestId: payload!.requestId, urls: ['https://cdn.example.com/same.jpg'] }, sender(21, 'https://example.com/detail'));
+    expect(result?.url).toBe('https://cdn.example.com/same.jpg');
+    await finishRelocation({ requestId: payload!.requestId, status: 'found' }, sender(21, 'https://example.com/detail'));
+    expect(mocks.updateItem).toHaveBeenCalledWith('item', expect.objectContaining({ sourceLocator: expect.objectContaining({ page: expect.objectContaining({ verified: expect.objectContaining({ url: 'https://example.com/detail', imageHash: 'a'.repeat(64) }) }) }) }));
+  });
+  it('returns to the original page when a nearby link displays a different image', async () => {
+    const item = await mocks.getItem();
+    item.sourceLocator = locatorFixture({ page: { url: item.sourceUrl, title: 'Album', links: ['https://example.com/wrong'] } });
+    mocks.getItem.mockResolvedValue(item);
+    await openItemSource('item');
+    const payload = await relocationReady(sender(21, 'https://example.com/wrong'));
+    expect(await verifySourceImages({ requestId: payload!.requestId, urls: ['https://cdn.example.com/different.jpg'] }, sender(21, 'https://example.com/wrong'))).toBeUndefined();
+    await finishRelocation({ requestId: payload!.requestId, status: 'not-found' }, sender(21, 'https://example.com/wrong'));
+    expect(api.tabs.update).toHaveBeenLastCalledWith(21, { url: item.sourceUrl });
+    expect(mocks.updateItem).not.toHaveBeenCalled();
+    await clearRelocation(21);
+  });
+  it('does not revive an old verification after navigation while reading saved bytes', async () => {
+    const item = await mocks.getItem();
+    item.sourceLocator = locatorFixture({ page: { url: item.sourceUrl, title: 'Album', links: ['https://example.com/detail'] } });
+    mocks.getItem.mockResolvedValue(item);
+    await openItemSource('item');
+    const payload = await relocationReady(sender(21, 'https://example.com/detail'));
+    let release!: (digest: string) => void;
+    const deferred = new Promise<string>(resolve => { release = resolve; });
+    mocks.hash.mockReturnValueOnce(deferred);
+    const verification = verifySourceImages({ requestId: payload!.requestId, urls: ['https://example.com/same.jpg'] }, sender(21, 'https://example.com/detail'));
+    await vi.waitFor(() => expect(mocks.hash).toHaveBeenCalledOnce());
+    await relocationNavigation(21, 'https://example.com/elsewhere');
+    const nextRequest = stored['pixstash-relocation-21'].requestId;
+    release('a'.repeat(64));
+    expect(await verification).toBeUndefined();
+    expect(stored['pixstash-relocation-21'].requestId).toBe(nextRequest);
+    expect(mocks.hash).toHaveBeenCalledOnce();
+    await clearRelocation(21);
+  });
+  it('rejects wrong documents, oversized requests, and unrelated origins', async () => {
+    const item = await mocks.getItem();
+    item.sourceLocator = locatorFixture({ page: { url: item.sourceUrl, title: 'Album', links: ['https://other.example/detail'] } });
+    mocks.getItem.mockResolvedValue(item);
+    await openItemSource('item');
+    expect(api.tabs.update).toHaveBeenLastCalledWith(21, { url: item.sourceUrl });
+    expect(await verifySourceImages({ requestId: 'wrong', urls: ['javascript:alert(1)'] }, sender(21))).toBeUndefined();
+    expect(mocks.hash).not.toHaveBeenCalled();
+    await clearRelocation(21);
+  });
+});

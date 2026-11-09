@@ -174,3 +174,10 @@ export async function normalizeExternalImage(url: string) {
     normalizing = false;
   }
 }
+
+/** Byte identity is deliberately strict: transformed or re-encoded images remain unconfirmed. */
+export async function imageContentHash(url: string) {
+  const raster = await readRaster(url);
+  const digest = await crypto.subtle.digest('SHA-256', await raster.blob.arrayBuffer());
+  return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2,'0')).join('');
+}

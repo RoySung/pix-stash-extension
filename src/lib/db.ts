@@ -1,3 +1,4 @@
+import { parseSourceLocator } from './source-locator';
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 
 import type { BookmarkRecord, CollectionRecord, ItemRecord } from './types';
@@ -66,6 +67,7 @@ function normalizeLegacyItemRecord(item: LegacyItemRecord): ItemRecord {
     metadata: item.metadata,
     tags: normalizeStoredTags(item.tags),
     collectionIds: [...new Set(item.collectionIds)],
+    sourceLocator: parseSourceLocator(item.sourceLocator),
     width: item.width,
     height: item.height,
   };
